@@ -264,6 +264,7 @@ EOD
 			// Convert plain text URLs into HTML hyperlinks
 			$cleanedTweet = $tweet->full_text;
 			$foundUrls = false;
+			$linkCount = 0;
 
 			if (isset($tweet->entities->media)) {
 				foreach($tweet->entities->media as $media) {
@@ -278,6 +279,9 @@ EOD
 					$cleanedTweet = str_replace($url->url,
 						'<a href="' . $url->expanded_url . '">' . $url->display_url . '</a>',
 						$cleanedTweet);
+					if (!preg_match('@https?://(twitter.com|t.co)|^\/@si', $url->expanded_url)) {
+						$linkCount++;
+					}
 					$foundUrls = true;
 				}
 			}
@@ -288,8 +292,12 @@ EOD
 					$cleanedTweet = preg_replace($reg_ex,
 						"<a href='{$url[0]}' target='_blank'>{$url[0]}</a> ",
 						$cleanedTweet);
+					if (!preg_match('@https?://(twitter.com|t.co)|^\/@si', $url[0])) {
+						$linkCount++;
+					}
 				}
 			}
+
 			// generate the title
 			$item['title'] = strip_tags($cleanedTweet);
 
@@ -397,12 +405,6 @@ EOD;
 
 			$imgOnly = $this->getInput('imgonly');
 			$linksOnly = $this->getInput('linksonly');
-			$linkCount = 0;
-			$tweetDom = getSimpleHTMLDOM($item['content']);
-			foreach($tweetDom->find('p.js-tweet-text', 0)->find('a') as $link) {
-				if (preg_match('@https?://(twitter.com|t.co)|^\/@si', $link->href)) continue;
-				$linkCount++;
-			}
 			if (
 				$imgOnly && !$linksOnly && $imageCount == 0 ||
 				!$imgOnly && $linksOnly && $linkCount == 0 ||
