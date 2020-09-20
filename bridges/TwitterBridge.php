@@ -24,7 +24,17 @@ class TwitterBridge extends BridgeAbstract {
 				'name' => 'Disable image scaling',
 				'type' => 'checkbox',
 				'title' => 'Activate to disable image scaling in tweets (keeps original image)'
-			)
+			),
+                        'linksonly' => array(
+                                'name' => 'Show only tweets that contain links',
+                                'type' => 'checkbox',
+                                'title' => 'Activate to show only tweets that contain links in content'
+                        ),
+                        'imgonly' => array(
+                                'name' => 'Show only tweets that contain images in tweets',
+                                'type' => 'checkbox',
+                                'title' => 'Activate to show only tweets that contain images in content'
+                        )
 		),
 		'By keyword or hashtag' => array(
 			'q' => array(
@@ -382,6 +392,21 @@ EOD;
 EOD;
 
 			$item['content'] = htmlspecialchars_decode($item['content'], ENT_QUOTES);
+
+                        $imgonly = $this->getInput('imgonly');
+                        $linksonly = $this->getInput('linksonly');
+                        $linkcount = 0;
+                        foreach($tweet->find('p.js-tweet-text', 0)->find('a') as $link) {
+                                if (preg_match('@https?://(twitter.com|t.co)|^\/@si', $link->href)) continue;
+                                $linkcount++;
+                        }
+                        if (
+                                $imgonly && !$linksonly && count($images) == 0 ||
+                                !$imgonly && $linksonly && $linkcount == 0 ||
+                                $imgonly && $linksonly && count($images) == 0 && $linkcount == 0
+                        ) {
+                                continue;
+                        }
 
 			// put out
 			$this->items[] = $item;
