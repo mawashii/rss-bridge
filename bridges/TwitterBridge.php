@@ -25,16 +25,16 @@ class TwitterBridge extends BridgeAbstract {
 				'type' => 'checkbox',
 				'title' => 'Activate to disable image scaling in tweets (keeps original image)'
 			),
-                        'linksonly' => array(
-                                'name' => 'Show only tweets that contain links',
-                                'type' => 'checkbox',
-                                'title' => 'Activate to show only tweets that contain links in content'
-                        ),
-                        'imgonly' => array(
-                                'name' => 'Show only tweets that contain images in tweets',
-                                'type' => 'checkbox',
-                                'title' => 'Activate to show only tweets that contain images in content'
-                        )
+			'linksonly' => array(
+				'name' => 'Show only tweets that contain links',
+				'type' => 'checkbox',
+				'title' => 'Activate to show only tweets that contain links in content'
+			),
+			'imgonly' => array(
+				'name' => 'Show only tweets that contain images in tweets',
+				'type' => 'checkbox',
+				'title' => 'Activate to show only tweets that contain images in content'
+			)
 		),
 		'By keyword or hashtag' => array(
 			'q' => array(
@@ -308,9 +308,11 @@ EOD;
 			}
 
 			// Get images
+			$imageCount = 0;
 			$media_html = '';
 			if(isset($tweet->extended_entities->media) && !$this->getInput('noimg')) {
 				foreach($tweet->extended_entities->media as $media) {
+					$imageCount++;
 					switch($media->type) {
 					case 'photo':
 						$image = $media->media_url_https . '?name=orig';
@@ -393,20 +395,21 @@ EOD;
 
 			$item['content'] = htmlspecialchars_decode($item['content'], ENT_QUOTES);
 
-                        $imgonly = $this->getInput('imgonly');
-                        $linksonly = $this->getInput('linksonly');
-                        $linkcount = 0;
-                        foreach($tweet->find('p.js-tweet-text', 0)->find('a') as $link) {
-                                if (preg_match('@https?://(twitter.com|t.co)|^\/@si', $link->href)) continue;
-                                $linkcount++;
-                        }
-                        if (
-                                $imgonly && !$linksonly && count($images) == 0 ||
-                                !$imgonly && $linksonly && $linkcount == 0 ||
-                                $imgonly && $linksonly && count($images) == 0 && $linkcount == 0
-                        ) {
-                                continue;
-                        }
+			$imgOnly = $this->getInput('imgonly');
+			$linksOnly = $this->getInput('linksonly');
+			$linkCount = 0;
+			$tweetDom = getSimpleHTMLDOM($item['content']);
+			foreach($tweetDom->find('p.js-tweet-text', 0)->find('a') as $link) {
+				if (preg_match('@https?://(twitter.com|t.co)|^\/@si', $link->href)) continue;
+				$linkCount++;
+			}
+			if (
+				$imgOnly && !$linksOnly && $imageCount == 0 ||
+				!$imgOnly && $linksOnly && $linkCount == 0 ||
+				$imgOnly && $linksOnly && $imageCount == 0 && $linkCount == 0
+			) {
+				continue;
+			}
 
 			// put out
 			$this->items[] = $item;
